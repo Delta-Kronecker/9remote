@@ -32,7 +32,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq cloudflared
+          sudo apt-get install -y jq
+          # Install cloudflared from official release
+          if [ ! -f /usr/local/bin/cloudflared ]; then
+            curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb
+            sudo apt install -y /tmp/cloudflared.deb
+            rm /tmp/cloudflared.deb
+          fi
 
       - name: Install 9Remote
         run: |
