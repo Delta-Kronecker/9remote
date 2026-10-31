@@ -24,9 +24,10 @@ fi
 tar -xzf "$TARBALL"
 PACKAGE_DIR="$TMPDIR/package"
 
-echo "==> Installing package dependencies (node-pty, etc)..."
+echo "==> Installing package dependencies (better-sqlite3, node-pty, etc)..."
 cd "$PACKAGE_DIR"
 npm install --omit=dev 2>/dev/null || npm install 2>/dev/null || true
+npm install better-sqlite3 2>/dev/null || true
 
 echo "==> Patching server.cjs for node:sqlite compatibility..."
 if [ -f "$PACKAGE_DIR/dist/server.cjs" ]; then
@@ -37,8 +38,11 @@ else
   exit 1
 fi
 
+echo "==> Setting up Node modules path..."
+export NODE_PATH="$PACKAGE_DIR/node_modules:/usr/local/lib/node_modules:$TMPDIR/node_modules"
+
 echo "==> Starting 9Remote daemon..."
-node "$PACKAGE_DIR/dist/cli.cjs" start > "$TMPDIR/9remote.log" 2>&1 &
+NODE_PATH="$PACKAGE_DIR/node_modules:/usr/local/lib/node_modules:$TMPDIR/node_modules" node "$PACKAGE_DIR/dist/cli.cjs" start > "$TMPDIR/9remote.log" 2>&1 &
 SERVER_PID=$!
 
 echo "==> Waiting for server to initialize (max 60 seconds)..."
