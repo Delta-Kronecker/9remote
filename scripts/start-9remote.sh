@@ -5,8 +5,8 @@ DURATION_HOURS="${1:-6}"
 AUTO_APPROVE="${2:-true}"
 
 echo "==> Starting 9Remote daemon..."
-# Start 9remote in background and redirect output to a log file
-9remote start > 9remote.log 2>&1 &
+# Start 9remote in background using npx and redirect output to a log file
+npx --yes 9remote start > 9remote.log 2>&1 &
 SERVER_PID=$!
 
 echo "==> Waiting for 9Remote server to initialize..."
@@ -36,7 +36,7 @@ if [ "$AUTO_APPROVE" = "true" ]; then
   echo "==> Enabling auto-approve for new incoming connections..."
   curl -fsS -X POST http://localhost:2208/api/device/auto-approve \
     -H "Content-Type: application/json" \
-    -d '{"enabled": true}' >/dev/null 2>&1 || 9remote auto-approve on || true
+    -d '{"enabled": true}' >/dev/null 2>&1 || npx --yes 9remote auto-approve on || true
 fi
 
 echo "==> Fetching connection keys and tunnel status..."

@@ -29,10 +29,14 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install 9Remote globally
+      - name: Install dependencies
         run: |
-          npm install -g 9remote
-          9remote --version
+          sudo apt-get update
+          sudo apt-get install -y jq cloudflared
+
+      - name: Install 9Remote
+        run: |
+          npx --yes 9remote@latest --version
 
       - name: Set permissions on scripts
         run: |
