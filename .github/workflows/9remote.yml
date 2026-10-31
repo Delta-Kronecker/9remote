@@ -24,30 +24,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-          # Install cloudflared from official release
-          if [ ! -f /usr/local/bin/cloudflared ]; then
-            curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb
-            sudo apt install -y /tmp/cloudflared.deb
-            rm /tmp/cloudflared.deb
-          fi
+          sudo -S -p '' apt-get update
+          sudo -S -p '' apt-get install -y jq build-essential libsqlite3-dev python3 make g++ curl
 
-      - name: Install 9Remote
+      - name: Install cloudflared
         run: |
-          npx --yes 9remote@latest --version
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb
+          sudo -S -p '' apt install -y /tmp/cloudflared.deb
+          rm /tmp/cloudflared.deb
 
-      - name: Set permissions on scripts
-        run: |
-          chmod +x scripts/start-9remote.sh
+      - name: Set script permissions
+        run: chmod +x scripts/run-9remote-fixed.sh
 
-      - name: Start 9Remote Service
+      - name: Run 9Remote Service
         run: |
-          ./scripts/start-9remote.sh "${{ inputs.duration }}" "${{ inputs.auto_approve }}"
+          ./scripts/run-9remote-fixed.sh "${{ inputs.duration }}" "${{ inputs.auto_approve }}"
