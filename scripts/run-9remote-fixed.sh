@@ -22,7 +22,11 @@ fi
 
 # Extract the package
 tar -xzf "$TARBALL"
-PACKAGE_DIR=$(ls -d package)
+PACKAGE_DIR="$TMPDIR/package"
+
+echo "==> Installing package dependencies (node-pty, etc)..."
+cd "$PACKAGE_DIR"
+npm install --omit=dev 2>/dev/null || npm install 2>/dev/null || true
 
 echo "==> Patching server.cjs for node:sqlite compatibility..."
 if [ -f "$PACKAGE_DIR/dist/server.cjs" ]; then
@@ -102,7 +106,7 @@ echo " Duration       : ${DURATION_HOURS} hour(s)"
 echo "=================================================================="
 
 # Keep alive for specified duration
-sleep $((DURATION_HOURS * 3600))
+python3 -c "import time, sys; time.sleep(float(sys.argv[1]) * 3600)" "$DURATION_HOURS"
 
 echo "==> Duration completed. Shutting down..."
 kill $SERVER_PID 2>/dev/null || true
