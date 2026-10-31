@@ -60,22 +60,34 @@ if [ "$AUTO_APPROVE" = "true" ]; then
     -d '{"enabled": true}' >/dev/null 2>&1 || true
 fi
 
-echo "==> Waiting for 9Remote tunnel and keys initialization..."
-for i in $(seq 1 15); do
+echo "==> Waiting for 9Remote tunnel and keys initialization (up to 60s)..."
+for i in $(seq 1 30); do
   STATE_JSON=$(curl -fsS http://localhost:2208/api/ui/state 2>/dev/null || echo "{}")
-  PERM_KEY=$(echo "$STATE_JSON" | jq -r '.permanentKey // "N/A"')
-  TUNNEL_URL=$(echo "$STATE_JSON" | jq -r '.tunnelUrl // "N/A"')
-  if [ "$PERM_KEY" != "N/A" ] && [ "$PERM_KEY" != "null" ] && [ "$TUNNEL_URL" != "N/A" ] && [ "$TUNNEL_URL" != "null" ]; then
+  PERM_KEY=$(echo "$STATE_JSON" | jq -r '.permanentKey // empty')
+  TUNNEL_URL=$(echo "$STATE_JSON" | jq -r '.tunnelUrl // empty')
+  if [ -n "$PERM_KEY" ] && [ "$PERM_KEY" != "null" ] && [ -n "$TUNNEL_URL" ] && [ "$TUNNEL_URL" != "null" ]; then
+    echo "==> Keys & Tunnel initialized!"
     break
   fi
   sleep 2
 done
 
+echo "==> Server UI State Response:"
+echo "$STATE_JSON" | jq . || true
+
 OTK_RESPONSE=$(curl -fsS -X POST http://localhost:2208/api/key/one-time 2>/dev/null || echo "{}")
-ONE_TIME_KEY=$(echo "$OTK_RESPONSE" | jq -r '.oneTimeKey // "N/A"')
-if [ "$ONE_TIME_KEY" = "N/A" ] || [ "$ONE_TIME_KEY" = "null" ]; then
+ONE_TIME_KEY=$(echo "$OTK_RESPONSE" | jq -r '.oneTimeKey // empty')
+if [ -z "$ONE_TIME_KEY" ] || [ "$ONE_TIME_KEY" = "null" ]; then
   ONE_TIME_KEY=$(echo "$STATE_JSON" | jq -r '.oneTimeKey // "N/A"')
 fi
+
+PERM_KEY=$(echo "$STATE_JSON" | jq -r '.permanentKey // "N/A"')
+TUNNEL_URL=$(echo "$STATE_JSON" | jq -r '.tunnelUrl // "N/A"')
+
+echo ""
+echo "--- 9Remote Daemon Output Log ---"
+cat "$TMPDIR/9remote.log" || true
+echo "---------------------------------"
 
 echo ""
 echo "=================================================================="
