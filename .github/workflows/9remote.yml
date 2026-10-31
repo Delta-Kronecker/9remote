@@ -37,13 +37,13 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo -S -p '' apt-get update
-          sudo -S -p '' apt-get install -y jq build-essential libsqlite3-dev python3 make g++ curl
+          sudo apt-get update
+          sudo apt-get install -y jq build-essential libsqlite3-dev python3 make g++ curl
 
       - name: Install cloudflared
         run: |
           curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb
-          sudo -S -p '' apt install -y /tmp/cloudflared.deb
+          sudo apt install -y /tmp/cloudflared.deb
           rm /tmp/cloudflared.deb
 
       - name: Set script permissions
