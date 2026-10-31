@@ -24,11 +24,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24.17.0'
-          cache: 'npm'
+      - name: Verify Node.js is available
+        run: |
+          which node
+          node --version
+          which npm
+          npm --version
 
       - name: Install system dependencies
         run: |
