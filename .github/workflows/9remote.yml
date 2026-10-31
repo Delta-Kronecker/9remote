@@ -1,0 +1,43 @@
+name: 9Remote Tunnel Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: 'Duration to keep runner alive in hours (1-24)'
+        required: true
+        default: '6'
+        type: string
+      auto_approve:
+        description: 'Auto-approve new incoming device connections'
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  run-9remote:
+    name: Run 9Remote Daemon
+    runs-on: ubuntu-latest
+    timeout-minutes: 1440
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install 9Remote globally
+        run: |
+          npm install -g 9remote
+          9remote --version
+
+      - name: Set permissions on scripts
+        run: |
+          chmod +x scripts/start-9remote.sh
+
+      - name: Start 9Remote Service
+        run: |
+          ./scripts/start-9remote.sh "${{ inputs.duration }}" "${{ inputs.auto_approve }}"
