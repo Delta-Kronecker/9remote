@@ -13,6 +13,11 @@ on:
         required: true
         default: true
         type: boolean
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/run-9remote-fixed.sh'
+      - '.github/workflows/9remote.yml'
 
 jobs:
   run-9remote:
@@ -42,7 +47,8 @@ jobs:
           rm /tmp/cloudflared.deb
 
       - name: Set script permissions
-        run: chmod +x scripts/run-9remote-fixed.sh
+        run: |
+          chmod +x scripts/run-9remote-fixed.sh
 
       - name: Run 9Remote Service
         run: |

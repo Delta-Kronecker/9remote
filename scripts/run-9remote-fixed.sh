@@ -1,33 +1,46 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "==> Installing better-sqlite3..."
+DURATION_HOURS="${1:-6}"
+AUTO_APPROVE="${2:-true}"
+
+echo "==> Installing better-sqlite3 globally..."
 npm install -g better-sqlite3
 
-echo "==> Downloading and patching 9remote..."
-# Clean previous 9remote cache
-rm -rf ~/.npm/_npx/*9remote* 2>/dev/null || true
+echo "==> Downloading and patching 9remote package..."
+TMPDIR=$(mktemp -d)
+cd "$TMPDIR"
 
-# Install 9remote
-npx --yes 9remote --version
+# Download 9remote package without running
+npm pack 9remote 2>/dev/null
+TARBALL=$(ls 9remote-*.tgz 2>/dev/null | head -1)
 
-echo "==> Patching node:sqlite imports in 9remote..."
-# Find and patch all server.cjs files that contain node:sqlite
-for file in $(find ~/.npm/_npx -name "server.cjs" -path "*/9remote/dist/*" 2>/dev/null); do
-    if grep -q "node:sqlite" "$file" 2>/dev/null; then
-        echo "Patching: $file"
-        sed -i 's/node:sqlite/better-sqlite3/g' "$file"
-    fi
-done
+if [ -z "$TARBALL" ]; then
+  echo "ERROR: Failed to download 9remote package"
+  exit 1
+fi
+
+# Extract the package
+tar -xzf "$TARBALL"
+PACKAGE_DIR=$(ls -d package)
+
+echo "==> Patching server.cjs for node:sqlite compatibility..."
+if [ -f "$PACKAGE_DIR/dist/server.cjs" ]; then
+  sed -i 's/node:sqlite/better-sqlite3/g' "$PACKAGE_DIR/dist/server.cjs"
+  echo "==> Patch applied"
+else
+  echo "ERROR: server.cjs not found in package"
+  exit 1
+fi
 
 echo "==> Starting 9Remote daemon..."
-npx --yes 9remote start > 9remote.log 2>&1 &
+node "$PACKAGE_DIR/dist/cli.cjs" start > "$TMPDIR/9remote.log" 2>&1 &
 SERVER_PID=$!
 
 echo "==> Waiting for server to initialize (max 60 seconds)..."
 for i in $(seq 1 30); do
   if curl -fsS http://localhost:2208/api/health >/dev/null 2>&1; then
-    echo "==> 9Remote server is healthy and listening!"
+    echo "==> 9Remote server is healthy and listening on port 2208!"
     break
   fi
   sleep 2
@@ -36,12 +49,9 @@ done
 if ! kill -0 $SERVER_PID 2>/dev/null; then
   echo "ERROR: 9Remote server crashed or failed to start"
   echo "--- Last 30 lines of log ---"
-  tail -30 9remote.log
+  tail -30 "$TMPDIR/9remote.log"
   exit 1
 fi
-
-DURATION_HOURS="${1:-6}"
-AUTO_APPROVE="${2:-true}"
 
 if [ "$AUTO_APPROVE" = "true" ]; then
   echo "==> Enabling auto-approve..."
@@ -77,3 +87,4 @@ sleep $((DURATION_HOURS * 3600))
 
 echo "==> Duration completed. Shutting down..."
 kill $SERVER_PID 2>/dev/null || true
+trap 'rm -rf "$TMPDIR"' EXIT
